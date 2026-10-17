@@ -5,9 +5,41 @@ const test = require('node:test');
 
 const documentPath = path.join(__dirname, '..', 'index.html');
 const html = fs.existsSync(documentPath) ? fs.readFileSync(documentPath, 'utf8') : '';
+const stylesheetPath = path.join(__dirname, '..', 'src', 'styles.css');
+const styles = fs.existsSync(stylesheetPath) ? fs.readFileSync(stylesheetPath, 'utf8') : '';
 
 function assertMarkup(pattern, message) {
   assert.match(html, pattern, message);
+}
+
+function parseVariables(block) {
+  return Object.fromEntries(
+    [...block.matchAll(/--([\w-]+)\s*:\s*(#[\da-fA-F]{6})\s*;/g)]
+      .map(([, name, value]) => [name, value])
+  );
+}
+
+function colorFromDeclaration(block, property, variables) {
+  const declaration = block.match(new RegExp(`${property}\\s*:\\s*(?:var\\((--[\\w-]+)\\)|(#[\\da-fA-F]{6}))`, 'i'));
+  assert.ok(declaration, `CSS rule declares ${property}`);
+  return declaration[1] ? variables[declaration[1].slice(2)] : declaration[2];
+}
+
+function relativeLuminance(hex) {
+  const channels = [1, 3, 5].map((offset) => {
+    const channel = Number.parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(first, second) {
+  const [lighter, darker] = [relativeLuminance(first), relativeLuminance(second)].sort((a, b) => b - a);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function applyBrightness(hex, factor) {
+  return `#${[1, 3, 5].map((offset) => Math.round(Number.parseInt(hex.slice(offset, offset + 2), 16) * factor).toString(16).padStart(2, '0')).join('')}`;
 }
 
 test('document exposes the language, viewport, skip link, and global controls', () => {
@@ -59,4 +91,35 @@ test('styles and classic scripts load in the controller-compatible order', () =>
   assert.ok(storeScript >= 0, 'store.js is loaded as a classic script');
   assert.ok(appScript > storeScript, 'app.js follows store.js');
   assert.equal([...html.matchAll(/\btabindex=["'](\d+)["']/gi)].some(([, value]) => Number(value) > 0), false, 'no positive tabindex overrides natural keyboard order');
+});
+
+test('danger button text keeps 4.5:1 contrast in both themes and on hover', () => {
+  const lightBlock = styles.match(/:root\s*{([^}]+)}/i)?.[1] ?? '';
+  const darkBlock = styles.match(/@media\s*\(prefers-color-scheme:\s*dark\)\s*{\s*:root\s*{([^}]+)}/i)?.[1] ?? '';
+  const lightVariables = parseVariables(lightBlock);
+  const darkVariables = parseVariables(darkBlock);
+  const normalRule = styles.match(/\.button-danger\s*{([^}]+)}/i)?.[1] ?? '';
+  const hoverRule = styles.match(/\.button-danger:hover\s*{([^}]+)}/i)?.[1] ?? '';
+  const brightness = Number(hoverRule.match(/filter\s*:\s*brightness\(([\d.]+)\)/i)?.[1] ?? 1);
+
+  for (const [theme, variables] of [['light', lightVariables], ['dark', darkVariables]]) {
+    const background = colorFromDeclaration(normalRule, 'background', variables);
+    const foreground = colorFromDeclaration(normalRule, 'color', variables);
+    assert.ok(background, `${theme} theme defines its danger button background`);
+    assert.ok(foreground, `${theme} theme defines its danger button foreground`);
+    const defaultRatio = contrastRatio(background, foreground);
+    const hoverRatio = contrastRatio(applyBrightness(background, brightness), applyBrightness(foreground, brightness));
+    assert.ok(defaultRatio >= 4.5, `${theme} default danger button contrast is at least 4.5:1 (got ${defaultRatio.toFixed(2)}:1)`);
+    assert.ok(hoverRatio >= 4.5, `${theme} hover danger button contrast is at least 4.5:1 (got ${hoverRatio.toFixed(2)}:1)`);
+  }
+
+  assert.match(normalRule, /color\s*:\s*var\(--danger-button-foreground\)/i, 'danger button foreground uses a theme token');
+  assert.ok(lightVariables['danger-button-foreground'], 'light theme defines the danger button foreground token');
+  assert.ok(darkVariables['danger-button-foreground'], 'dark theme defines the danger button foreground token');
+});
+
+test('task cards retain the visible focus ring used after keyboard moves', () => {
+  const taskFocusRule = styles.match(/(?:^|})\s*[^{}]*\.task:focus-visible[^{}]*{([^}]+)}/i)?.[1] ?? '';
+  assert.match(taskFocusRule, /outline\s*:\s*3px solid var\(--focus\)/i, 'focused task card gets a 3px focus outline');
+  assert.match(taskFocusRule, /outline-offset\s*:\s*2px/i, 'focused task card outline is offset from its edge');
 });

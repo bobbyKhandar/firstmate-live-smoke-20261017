@@ -12,6 +12,7 @@
   --primary-hover: #352a1b;
   --on-primary: #fffdf8;
   --danger: #9f4032;
+  --danger-button-foreground: #fffaf6;
   --todo: #b7791f;
   --todo-ink: #75460d;
   --doing: #0f766e;
@@ -41,6 +42,7 @@
     --primary-hover: #f0d39c;
     --on-primary: #241c10;
     --danger: #f28b78;
+    --danger-button-foreground: #382017;
     --todo: #e2a84d;
     --todo-ink: #f2c77f;
     --doing: #59c1b3;
@@ -95,7 +97,8 @@ a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
-main:focus-visible {
+main:focus-visible,
+.task:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
@@ -271,7 +274,7 @@ h1 {
 
 .button-danger {
   background: var(--danger);
-  color: #fffaf6;
+  color: var(--danger-button-foreground);
 }
 
 .button-danger:hover {
