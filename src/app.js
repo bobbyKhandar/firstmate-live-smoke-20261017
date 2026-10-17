@@ -347,6 +347,12 @@
       return index;
     }
 
+    function clearDragPresentation() {
+      draggedId = null;
+      columns.querySelectorAll('.is-dragging').forEach((item) => item.classList.remove('is-dragging'));
+      columns.querySelectorAll('.is-drop-target').forEach((item) => item.classList.remove('is-drop-target'));
+    }
+
     columns.addEventListener('dragstart', (event) => {
       const card = event.target.closest('.task[data-id]');
       if (!card || !event.dataTransfer) return;
@@ -366,42 +372,42 @@
     });
 
     columns.addEventListener('drop', (event) => {
-      const column = event.target.closest('.column[data-status]');
-      if (!column) return;
       event.preventDefault();
-      const sourceId = (event.dataTransfer && event.dataTransfer.getData('text/plain')) || draggedId;
-      const task = state.tasks.find((item) => item.id === sourceId);
-      if (!task) return;
+      try {
+        const column = event.target.closest('.column[data-status]');
+        if (!column) return;
+        const sourceId = (event.dataTransfer && event.dataTransfer.getData('text/plain')) || draggedId;
+        const task = state.tasks.find((item) => item.id === sourceId);
+        if (!task) return;
 
-      const destination = column.dataset.status;
-      const list = column.querySelector('.task-list');
-      let index;
-      if (searchQuery.trim()) {
-        index = state.tasks.filter((item) => item.status === destination && item.id !== sourceId).length;
-      } else {
-        index = targetDropIndex(list, sourceId, event.clientY);
+        const destination = column.dataset.status;
+        const list = column.querySelector('.task-list');
+        if (!list) return;
+        let index;
+        if (searchQuery.trim()) {
+          index = state.tasks.filter((item) => item.status === destination && item.id !== sourceId).length;
+        } else {
+          index = targetDropIndex(list, sourceId, event.clientY);
+        }
+        persist(store.moveTask(state, sourceId, destination, index));
+        render();
+        if (task.status !== destination) {
+          announce('Moved “' + task.title + '” to ' + labelForStatus(destination));
+        } else {
+          announce('Reordered “' + task.title + '” in ' + labelForStatus(destination));
+        }
+        const movedCard = findTaskCard(sourceId);
+        if (movedCard) {
+          focusControl(movedCard.querySelector('.js-edit')) || focusControl(movedCard);
+        } else {
+          focusControl(search) || focusControl(addButton);
+        }
+      } finally {
+        clearDragPresentation();
       }
-      persist(store.moveTask(state, sourceId, destination, index));
-      render();
-      if (task.status !== destination) {
-        announce('Moved “' + task.title + '” to ' + labelForStatus(destination));
-      } else {
-        announce('Reordered “' + task.title + '” in ' + labelForStatus(destination));
-      }
-      const movedCard = findTaskCard(sourceId);
-      if (movedCard) {
-        focusControl(movedCard.querySelector('.js-edit')) || focusControl(movedCard);
-      } else {
-        focusControl(search) || focusControl(addButton);
-      }
-      draggedId = null;
     });
 
-    columns.addEventListener('dragend', () => {
-      draggedId = null;
-      columns.querySelectorAll('.is-dragging').forEach((item) => item.classList.remove('is-dragging'));
-      columns.querySelectorAll('.is-drop-target').forEach((item) => item.classList.remove('is-drop-target'));
-    });
+    columns.addEventListener('dragend', clearDragPresentation);
 
     render();
   }
