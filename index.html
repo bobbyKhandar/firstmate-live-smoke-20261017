@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Taskboard</title>
+    <link rel="stylesheet" href="src/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#board">Skip to board</a>
+
+    <div class="page-shell">
+      <header class="site-header">
+        <div class="brand-block">
+          <p class="eyebrow">A SMALL WORKSHOP FOR BIG IDEAS</p>
+          <h1>Taskboard</h1>
+          <p class="tagline">A calmer place to keep good work moving.</p>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-field">
+            <label for="search">Search tasks</label>
+            <input id="search" type="search" autocomplete="off" placeholder="Search title or notes">
+          </div>
+          <button id="add-task" class="button button-primary" type="button">Add task</button>
+        </div>
+        <p id="storage-notice" class="notice" role="status" hidden></p>
+      </header>
+
+      <main id="board" tabindex="-1">
+        <div id="board-empty" class="board-empty" hidden>
+          <span class="empty-mark" aria-hidden="true">✳</span>
+          <h2>Your board is empty</h2>
+          <p>Add a task to get started.</p>
+          <button id="empty-add" class="button button-primary" type="button">Add your first task</button>
+        </div>
+
+        <div id="columns" class="columns">
+          <section class="column column-todo" data-status="todo" aria-labelledby="col-todo-title">
+            <header class="column-header">
+              <div class="column-heading">
+                <span class="column-marker" aria-hidden="true"></span>
+                <h2 id="col-todo-title">To do</h2>
+              </div>
+              <span class="count" data-count="todo">0</span>
+            </header>
+            <ul class="task-list" data-list="todo" aria-labelledby="col-todo-title"></ul>
+            <p class="empty" data-empty="todo" hidden></p>
+          </section>
+
+          <section class="column column-doing" data-status="doing" aria-labelledby="col-doing-title">
+            <header class="column-header">
+              <div class="column-heading">
+                <span class="column-marker" aria-hidden="true"></span>
+                <h2 id="col-doing-title">In progress</h2>
+              </div>
+              <span class="count" data-count="doing">0</span>
+            </header>
+            <ul class="task-list" data-list="doing" aria-labelledby="col-doing-title"></ul>
+            <p class="empty" data-empty="doing" hidden></p>
+          </section>
+
+          <section class="column column-done" data-status="done" aria-labelledby="col-done-title">
+            <header class="column-header">
+              <div class="column-heading">
+                <span class="column-marker" aria-hidden="true"></span>
+                <h2 id="col-done-title">Done</h2>
+              </div>
+              <span class="count" data-count="done">0</span>
+            </header>
+            <ul class="task-list" data-list="done" aria-labelledby="col-done-title"></ul>
+            <p class="empty" data-empty="done" hidden></p>
+          </section>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <span>One step at a time.</span>
+        <span class="footer-spark" aria-hidden="true">✳</span>
+      </footer>
+    </div>
+
+    <div id="announcer" class="sr-only" aria-live="polite"></div>
+
+    <template id="task-template">
+      <li class="task" data-id="" draggable="true">
+        <div class="task-topline">
+          <span class="task-grip" aria-hidden="true">⠿</span>
+          <span class="task-status-mark" aria-hidden="true"></span>
+        </div>
+        <h3 class="task-title"></h3>
+        <p class="task-notes"></p>
+        <div class="task-actions">
+          <button type="button" class="js-move-prev"></button>
+          <button type="button" class="js-move-next"></button>
+          <button type="button" class="js-edit">Edit</button>
+          <button type="button" class="js-delete">Delete</button>
+        </div>
+      </li>
+    </template>
+
+    <dialog id="task-dialog" class="task-dialog" aria-labelledby="dialog-title">
+      <form id="task-form" method="dialog" novalidate>
+        <div class="dialog-heading">
+          <p class="eyebrow">MAKE A LITTLE PROGRESS</p>
+          <h2 id="dialog-title"></h2>
+        </div>
+        <input type="hidden" id="task-id">
+
+        <div class="form-field">
+          <label for="task-title">Title</label>
+          <input id="task-title" name="title" maxlength="120" required aria-describedby="task-error">
+        </div>
+        <div class="form-field">
+          <label for="task-notes">Notes (optional)</label>
+          <textarea id="task-notes" name="notes" maxlength="500" rows="4"></textarea>
+        </div>
+        <div class="form-field">
+          <label for="task-status">Status</label>
+          <select id="task-status" name="status">
+            <option value="todo">To do</option>
+            <option value="doing">In progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+
+        <p id="task-error" class="form-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button type="button" class="button button-quiet" id="task-cancel">Cancel</button>
+          <button type="submit" class="button button-primary" id="task-save">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title">
+      <div class="dialog-heading">
+        <p class="eyebrow">A QUICK CHECK</p>
+        <h2 id="confirm-title">Delete task?</h2>
+      </div>
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="dialog-actions">
+        <button type="button" class="button button-quiet" id="confirm-cancel">Cancel</button>
+        <button type="button" class="button button-danger" id="confirm-delete">Delete</button>
+      </div>
+    </dialog>
+
+    <script src="src/store.js"></script>
+    <script src="src/app.js"></script>
+  </body>
+</html>
