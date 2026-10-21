@@ -11,3 +11,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Add a real-valued expression parser and evaluator with variables, constants, and math functions.
 - Added unit conversion with dimensional checks, compound units, and affine temperature conversions.
 - Add significant-figure number formatting with automatic, fixed, scientific, and engineering notation.
+- Add an argparse command line for expression evaluation and unit conversion.

@@ -36,3 +36,31 @@ from unitcalc import format_number
 format_number(999.96, sig=4)                 # "1000"
 format_number(12345, sig=3, notation="eng")  # "12.3e3"
 ```
+
+### Command line
+
+Run the calculator with `python -m unitcalc`. The `eval` subcommand accepts an
+expression, repeatable `--var NAME=VALUE` assignments, and `--sig` and
+`--notation {auto,fixed,sci,eng}` formatting options:
+
+```console
+$ python -m unitcalc eval "2*(3+4)^2"
+98
+$ python -m unitcalc eval "x^2" --var x=3 --sig 3
+9
+```
+
+The `convert` subcommand evaluates its value as an expression before converting
+between units. Both subcommands print formatted results; errors go to standard
+error with status 2, and expression syntax errors include the source and a
+caret at the error column. Use `--` before a negative expression so argparse
+passes it as a value:
+
+```console
+$ python -m unitcalc convert 100 km/h m/s
+27.7778
+$ python -m unitcalc convert "60*1.5" min h
+1.5
+```
+
+The package also exports `main(argv=None)` for embedding the same CLI.
