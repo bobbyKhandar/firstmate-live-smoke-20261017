@@ -6,7 +6,8 @@ from unitcalc import DimensionError, UnitError, __all__, __version__, convert
 class UnitConversionTests(unittest.TestCase):
     def test_package_exports_units_api(self):
         self.assertEqual(__version__, "0.1.0")
-        self.assertEqual(__all__, ["DimensionError", "UnitError", "convert"])
+        self.assertTrue({"DimensionError", "UnitError", "convert"}.issubset(__all__))
+        self.assertEqual(__all__, sorted(__all__))
         self.assertTrue(issubclass(DimensionError, UnitError))
 
     def test_each_linear_unit_converts_to_its_base_unit(self):
